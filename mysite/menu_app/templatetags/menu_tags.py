@@ -36,13 +36,13 @@ def is_active(menu_item, request):
     return url == request.path
 
 def is_expanded(menu_item, request, menu_tree):
-    """
-    Checks if a menu item should be expanded based on the active item.
-    Expanded if it's an ancestor of the active item, the active item itself,
-    or a direct child of an active item.
-    """
-    if is_active(menu_item, request):
+    """Checks if a menu item should be expanded."""
+    # Expanded if it's an ancestor of the active item or the active item itself.
+    if is_active(menu_item['item'], request):
         return True
+
+    # Check if any child is active and should be expanded.
+    # We need to traverse the original menu_items to check for ancestors
 
     # Check if any child is active
     for child in menu_item.get('children', []):
@@ -50,6 +50,16 @@ def is_expanded(menu_item, request, menu_tree):
             return True
 
     return False
+
+def add_expansion_status(menu_tree, request):
+    """
+    Recursively adds 'is_expanded_node' key to each node in the menu tree.
+    """
+    for node in menu_tree:
+        node['is_expanded_node'] = is_expanded(node, request, menu_tree)
+        if node['children']:
+            add_expansion_status(node['children'], request)
+    return menu_tree
 
 @register.simple_tag(takes_context=True)
 def draw_menu(context, menu_name):
@@ -61,8 +71,7 @@ def draw_menu(context, menu_name):
     request = context['request']
 
     return render_to_string('menu_app/menu_tree.html', {
-        'menu_tree': menu_tree,
+        'menu_tree': add_expansion_status(menu_tree, request),
         'request': request,
         'is_active': is_active,
-        'is_expanded': is_expanded,
     })
