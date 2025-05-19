@@ -1,5 +1,6 @@
 from django import template
 from django.urls import reverse, NoReverseMatch
+from django.template.loader import render_to_string
 from ..models import MenuItem
 
 register = template.Library()
@@ -44,16 +45,24 @@ def is_expanded(menu_item, request, menu_tree):
         return True
 
     # Check if any child is active
-    for child in menu_item['children']:
+    for child in menu_item.get('children', []):
         if is_expanded(child, request, menu_tree):
             return True
 
     return False
 
 @register.simple_tag(takes_context=True)
-def draw_menu(request, menu_name):
+def draw_menu(context, menu_name):
     """
     Template tag to draw a menu by name.
     """
     menu_items = MenuItem.objects.filter(menu_name=menu_name).select_related('parent')
     menu_tree = build_menu_tree(menu_items)
+    request = context['request']
+
+    return render_to_string('menu_app/menu_tree.html', {
+        'menu_tree': menu_tree,
+        'request': request,
+        'is_active': is_active,
+        'is_expanded': is_expanded,
+    })
