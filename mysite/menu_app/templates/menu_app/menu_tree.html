@@ -1,0 +1,14 @@
+{% load menu_tags %}
+
+<ul>
+    {% for node in menu_tree %}
+        <li>
+            <a href="{{ node.menu_item.url|default:node.menu_item.named_url|urlencode }}">
+                {{ node.menu_item.title }}
+            </a>
+            {% if is_expanded(node.menu_item, request, menu_tree) %}
+                {% include 'menu_app/menu_tree.html' with menu_tree=node.children request=request is_active=is_active is_expanded=is_expanded %}
+            {% endif %}
+        </li>
+    {% endfor %}
+</ul>
